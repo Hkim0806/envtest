@@ -1,0 +1,15 @@
+creation_rules:
+  # Plain dotenv names (local-only use) and encrypted variants committed to Git.
+  # Matches:
+  #   .env
+  #   .env.dev
+  #   .env.prod
+  #   .env.enc
+  #   .env.dev.enc
+  #   .env.prod.enc
+  - path_regex: (^|/)\.env(\.(dev|prod))?(\.enc)?$
+    age:
+      # Add one or more real age public keys (age1...).
+      - age1ne73y5hy979ywe729k07lyqst7atxrupr9lmecnpens747sjcfaq8jal9x
+      # - age1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      # - age1yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy

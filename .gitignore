@@ -1,0 +1,12 @@
+# Plain env files must never be committed.
+.env
+.env.*
+
+# Keep examples and encrypted env files tracked.
+!.env.example
+!.env*.enc
+
+# Local decrypted artifacts (if used)
+*.decrypted.env
+*.env.dec
+
