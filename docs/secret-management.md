@@ -1,81 +1,112 @@
-# Secret Management (SOPS + age)
+# 비밀정보 관리 가이드 (SOPS + age)
 
-## Goal
-- Commit only encrypted env files to Git (`.env.enc`, `.env.dev.enc`, `.env.prod.enc`).
-- Keep each developer's age private key only on their local machine.
-- Manage team access by adding/removing age public keys in SOPS recipients.
+이 문서는 우리 프로젝트에서 `.env` 비밀정보를 안전하게 관리하기 위한 표준 절차입니다.
 
-## Files in this setup
-- `.sops.yaml`: SOPS rules and age recipients
-- `.gitignore`: blocks plaintext `.env*`, allows `.env*.enc`
-- `scripts/open-ide.sh`: opens IDE/editor with env injected via `sops exec-env`
-- `scripts/run-with-env.sh`: runs any command with env injected via `sops exec-env`
-- `.githooks/pre-commit`: blocks commits when plaintext `.env*` is staged
+## 목적
 
-## 1) Install age
+- Git에는 암호화 파일(`.env*.enc`)만 저장
+- 평문 `.env*`는 로컬에만 보관
+- 각 개발자는 본인 `age` 개인키만 로컬 보관
+- 팀원 추가/제거를 공개키 갱신으로 처리
+
+## 구성 파일
+
+- `.sops.yaml`: 암호화 규칙 + age 공개키(recipient) 목록
+- `.gitignore`: 평문 `.env*` 추적 차단
+- `.githooks/pre-commit`: 평문 `.env*` staged 시 커밋 차단
+- `scripts/open-ide.sh`: IDE를 `sops exec-env`로 실행
+- `scripts/run-with-env.sh`: 임의 명령을 `sops exec-env`로 실행
+
+## 1) 설치
+
+### age 설치
+
 - macOS: `brew install age`
 - Ubuntu/Debian: `sudo apt-get install age`
-- Windows (Scoop): `scoop install age`
+- Windows: `winget install --id FiloSottile.age` 또는 `scoop install age`
 
-## 2) Install sops
+### sops 설치
+
 - macOS: `brew install sops`
 - Ubuntu/Debian: `sudo apt-get install sops`
-- Windows (Scoop): `scoop install sops`
+- Windows: `scoop install sops` 또는 릴리스 바이너리 설치
 
-## 3) Generate age key pair
+설치 확인:
+
+```bash
+sops --version
+age --version
+age-keygen --version
+```
+
+## 2) age 키 생성
+
 ```bash
 mkdir -p ~/.config/sops/age
 age-keygen -o ~/.config/sops/age/keys.txt
-chmod 600 ~/.config/sops/age/keys.txt
 ```
 
-## 4) Show your public key
+공개키 확인:
+
 ```bash
 age-keygen -y ~/.config/sops/age/keys.txt
 ```
-- Share only the `age1...` public key.
-- Never share `AGE-SECRET-KEY-...`.
 
-## 5) Update `.sops.yaml`
-1. Add team public keys under `age:`.
-2. Rules already cover `.env`, `.env.dev`, `.env.prod`, and `.enc` variants.
-3. Apply recipient updates to encrypted files using `updatekeys`.
+- 공유 대상: `age1...` 공개키
+- 공유 금지: `AGE-SECRET-KEY-...` 개인키
 
-## 6) Encrypt `.env` files
+## 3) `.sops.yaml` 반영
+
+1. 팀원 공개키를 `.sops.yaml`의 `age:` 목록에 추가
+2. 규칙은 `.env`, `.env.dev`, `.env.prod` 및 `.enc` 변형에 적용
+3. 키 변경 후 암호문 갱신(`updatekeys` 또는 `rotate`) 수행
+
+## 4) `.env` 암호화
+
 ```bash
-sops encrypt --input-type dotenv --output-type dotenv .env > .env.enc
-sops encrypt --input-type dotenv --output-type dotenv .env.dev > .env.dev.enc
-sops encrypt --input-type dotenv --output-type dotenv .env.prod > .env.prod.enc
+sops encrypt --input-type dotenv --output-type dotenv --output .env.enc .env
+sops encrypt --input-type dotenv --output-type dotenv --output .env.dev.enc .env.dev
+sops encrypt --input-type dotenv --output-type dotenv --output .env.prod.enc .env.prod
 ```
-- Commit only `.env*.enc`.
-- Plaintext `.env*` is ignored by Git.
 
-## 7) Verify decryption
+- Git 커밋: `.env*.enc`만
+- 평문 `.env*`: 커밋 금지(로컬 전용)
+
+## 5) 복호화 확인
+
 ```bash
 sops decrypt --filename-override .env .env.enc
 ```
-- Prefer viewing in terminal instead of writing plaintext to disk.
 
-## 8) Open IDE with injected env
+가능하면 파일로 저장하지 말고 터미널 출력으로만 확인합니다.
+
+## 6) IDE 실행 방법
+
 ```bash
 ./scripts/open-ide.sh code
 ./scripts/open-ide.sh cursor
 ./scripts/open-ide.sh idea
 ```
-- Without IDE arg, auto-detect order is:
-  `code -> cursor -> windsurf -> idea -> pycharm -> webstorm -> phpstorm -> goland -> rider -> studio -> nvim -> vim`
-- Use a different encrypted file:
+
+다른 암호문 사용:
+
 ```bash
 ./scripts/open-ide.sh --env-file .env.dev.enc
 ```
 
-## 9) Run any command with injected env
+인자 생략 시 자동 탐색 우선순위:
+
+`code -> cursor -> windsurf -> idea -> pycharm -> webstorm -> phpstorm -> goland -> rider -> studio -> nvim -> vim`
+
+## 7) 범용 실행 스크립트
+
 ```bash
 ./scripts/run-with-env.sh npm run dev
 ./scripts/run-with-env.sh --env-file .env.prod.enc -- npm run start
 ```
 
-## 10) Supported IDE/editor commands
+## 8) 지원 IDE/에디터
+
 - `code`
 - `cursor`
 - `windsurf`
@@ -89,40 +120,60 @@ sops decrypt --filename-override .env .env.enc
 - `nvim`
 - `vim`
 
-## 11) Add a new teammate (use `updatekeys`)
-1. Add the new member public key to `.sops.yaml`.
-2. Update recipients in existing encrypted files:
+## 9) 팀원 추가 절차 (`updatekeys`)
+
+1. 신규 팀원 공개키를 `.sops.yaml`에 추가
+2. 기존 암호문 recipient 갱신
+
 ```bash
 sops updatekeys .env.enc
 sops updatekeys .env.dev.enc
 sops updatekeys .env.prod.enc
 ```
-3. Commit `.sops.yaml` and updated `.env*.enc`.
 
-## 12) Remove a teammate (use `rotate`)
-1. Remove that member public key from `.sops.yaml`.
-2. Rotate data keys (critical for removal):
+3. `.sops.yaml` + 변경된 `.env*.enc` 커밋
+
+## 10) 팀원 제거 절차 (`rotate`)
+
+1. 제거 대상 공개키를 `.sops.yaml`에서 삭제
+2. 데이터 키 재발급(필수)
+
 ```bash
 sops rotate -i .env.enc
 sops rotate -i .env.dev.enc
 sops rotate -i .env.prod.enc
 ```
-3. Commit rotated `.env*.enc` and `.sops.yaml`.
 
-## 13) `updatekeys` vs `rotate`
-- `updatekeys`: updates recipient metadata; best for member addition.
-- `rotate`: re-encrypts with a new data key; required for member removal.
+3. `.sops.yaml` + 변경된 `.env*.enc` 커밋
 
-## 14) Enable Git hook
+## 11) `updatekeys` vs `rotate`
+
+- `updatekeys`: recipient 목록 갱신(주로 팀원 추가)
+- `rotate`: 데이터 키 자체 재생성(팀원 제거 시 필수)
+
+## 12) Git hook 설정 (필수)
+
 ```bash
 git config core.hooksPath .githooks
-chmod +x .githooks/pre-commit
 ```
-- Default mode (recommended): block commit when plaintext `.env*` is staged.
-- Optional mode: `AUTO_ENCRYPT_ENV=1 git commit` auto-refreshes `.env.enc` from `.env`.
 
-## 15) Operational cautions
-- Never share private keys.
-- Treat `.env*.enc` changes as mandatory review items.
-- Run `rotate` immediately when team access changes or key leak is suspected.
-- For CI/CD, use dedicated deploy keys, not developer personal keys.
+기본 동작:
+
+- staged 파일에 평문 `.env*`가 있으면 커밋 실패
+
+선택 동작:
+
+- `AUTO_ENCRYPT_ENV=1 git commit` 시 `.env -> .env.enc` 자동 갱신 시도
+
+권장:
+
+- 기본은 차단 모드 사용
+- 자동 갱신은 보조 기능으로만 사용
+
+## 13) 운영 주의사항
+
+- 개인키는 절대 공유하지 않습니다.
+- `.env*.enc` 변경은 반드시 코드리뷰합니다.
+- 팀원 제거/키 유출 의심 시 즉시 `rotate` 수행합니다.
+- CI/CD에는 개발자 개인키 대신 배포 전용 키를 사용합니다.
+
