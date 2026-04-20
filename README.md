@@ -1,4 +1,4 @@
-# envtest Secret Management
+# Secret Management
 
 SOPS + age 기반으로 `.env` 비밀정보를 안전하게 관리하기 위한 가이드입니다.
 
