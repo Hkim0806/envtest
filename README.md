@@ -1,179 +1,180 @@
-# envtest Secret Management (SOPS + age)
+﻿# envtest Secret Management (SOPS + age)
 
-이 문서는 팀이 `.env`를 안전하게 공유/운영하기 위한 실무 가이드입니다.
+??臾몄꽌?????`.env`瑜??덉쟾?섍쾶 怨듭쑀/?댁쁺?섍린 ?꾪븳 ?ㅻТ 媛?대뱶?낅땲??
 
-핵심 목적:
+?듭떖 紐⑹쟻:
 
-- Git에는 암호화 파일만 올린다 (`.env.enc`)
-- 팀원은 레포만 받아도 `.env`를 복호화해서 바로 사용할 수 있다
-- 평문 `.env` 실수 커밋은 hook으로 차단한다
-
----
-
-## 팀 기본 운영 방식
-
-
-1. 각 개발자는 본인 PC에서 초기설정 1회 한다
-2. 평소 개발은 로컬 평문 `.env`로 개발한다
-3. `.env` 값을 바꿨으면 커밋 전에 `.env.enc`를 다시 만든다
-4. Git에는 `.env.enc`만 커밋한다 (`.env`는 금지)
+- Git?먮뒗 ?뷀샇???뚯씪留??щ┛??(`.env.enc`)
+- ??먯? ?덊룷留?諛쏆븘??`.env`瑜?蹂듯샇?뷀빐??諛붾줈 ?ъ슜?????덈떎
+- ?됰Ц `.env` ?ㅼ닔 而ㅻ컠? hook?쇰줈 李⑤떒?쒕떎
 
 ---
 
-## 빠른 시작 (처음 1회)
+## ? 湲곕낯 ?댁쁺 諛⑹떇
 
-### 1) 레포 클론
+
+1. 媛?媛쒕컻?먮뒗 蹂몄씤 PC?먯꽌 珥덇린?ㅼ젙 1???쒕떎
+2. ?됱냼 媛쒕컻? 濡쒖뺄 ?됰Ц `.env`濡?媛쒕컻?쒕떎
+3. `.env` 媛믪쓣 諛붽엥?쇰㈃ 而ㅻ컠 ?꾩뿉 `.env.enc`瑜??ㅼ떆 留뚮뱺??
+4. Git?먮뒗 `.env.enc`留?而ㅻ컠?쒕떎 (`.env`??湲덉?)
+
+---
+
+## 鍮좊Ⅸ ?쒖옉 (泥섏쓬 1??
+
+### 1) ?덊룷 ?대줎
 
 ```bash
 git clone https://github.com/Hkim0806/envtest.git
 cd envtest
 ```
 
-### 2) 설치 + 초기설정 자동 실행 (OS별 하나만)
+### 2) ?ㅼ튂 + 珥덇린?ㅼ젙 ?먮룞 ?ㅽ뻾 (OS蹂??섎굹留?
 
 Windows (PowerShell,CMD):
 
 ```bat
-.\install\setup-secrets-windows.bat
+.\env_encrypt\install\setup-secrets-windows.bat
 ```
 
 
 Windows (Git Bash):
 
 ```bash
-./install/setup-secrets-windows.sh
+./env_encrypt/install/setup-secrets-windows.sh
 ```
 
 macOS:
 
 ```bash
-chmod +x ./install/setup-secrets-macos.sh
-./install/setup-secrets-macos.sh
+chmod +x ./env_encrypt/install/setup-secrets-macos.sh
+./env_encrypt/install/setup-secrets-macos.sh
 ```
 
 Linux:
 
 ```bash
-chmod +x ./install/setup-secrets-linux.sh
-./install/setup-secrets-linux.sh
+chmod +x ./env_encrypt/install/setup-secrets-linux.sh
+./env_encrypt/install/setup-secrets-linux.sh
 ```
 
-이 단계에서 자동으로 처리됨:
+???④퀎?먯꽌 ?먮룞?쇰줈 泥섎━??
 
-- sops/age 설치
-- PATH 설정
-- age 키 생성
-- `SOPS_AGE_KEY_FILE` 설정
-- 공개키 출력
+- sops/age ?ㅼ튂
+- PATH ?ㅼ젙
+- age ???앹꽦
+- `SOPS_AGE_KEY_FILE` ?ㅼ젙
+- 怨듦컻??異쒕젰
 
-### 3) 새 터미널 열기
+### 3) ???곕????닿린
 
-PATH/환경변수 반영을 위해 필요합니다.
+PATH/?섍꼍蹂??諛섏쁺???꾪빐 ?꾩슂?⑸땲??
 
-### 4) hook 활성화 (각 repo마다 1회)
+### 4) hook ?쒖꽦??(媛?repo留덈떎 1??
 
 ```bash
 git config core.hooksPath .githooks
 ```
 
-중요:
+以묒슂:
 
-- hook은 “한 명만” 설정하는 게 아닙니다.
-- **각자 로컬 repo마다 직접 1회** 설정해야 합니다.
+- hook? ?쒗븳 紐낅쭔???ㅼ젙?섎뒗 寃??꾨떃?덈떎.
+- **媛곸옄 濡쒖뺄 repo留덈떎 吏곸젒 1??* ?ㅼ젙?댁빞 ?⑸땲??
 
-(선택사항)
+(?좏깮?ы빆)
 
-git hook 전역 설정
+git hook ?꾩뿭 ?ㅼ젙
 ```
 git config --global core.hooksPath .githooks
 ```
-이 설정은 전역 설정이기에 organization이 아닌 다른 repo의 env 커밋이 막힐 수 있음.
+???ㅼ젙? ?꾩뿭 ?ㅼ젙?닿린??organization???꾨땶 ?ㅻⅨ repo??env 而ㅻ컠??留됲옄 ???덉쓬.
 
 ---
 
-## 빠른 시작 다음에는 어디로?
+## 鍮좊Ⅸ ?쒖옉 ?ㅼ쓬?먮뒗 ?대뵒濡?
 
-상황별로 바로 이 섹션으로 가면 됩니다.
+?곹솴蹂꾨줈 諛붾줈 ???뱀뀡?쇰줈 媛硫??⑸땲??
 
-- “바로 개발 시작” -> [개발 흐름](#개발-흐름)
-- “env 값을 바꿨다” -> [언제 어떤 명령을 치나](#언제-어떤-명령을-치나)
-- “새 팀원 들어왔다/나갔다” -> [팀원 추가/제거](#팀원-추가제거-envenc-하나-기준)
+- ?쒕컮濡?媛쒕컻 ?쒖옉??-> [媛쒕컻 ?먮쫫](#媛쒕컻-?먮쫫)
+- ?쐃nv 媛믪쓣 諛붽엥?ㅲ?-> [?몄젣 ?대뼡 紐낅졊??移섎굹](#?몄젣-?대뼡-紐낅졊??移섎굹)
+- ?쒖깉 ????ㅼ뼱?붾떎/?섍컮?ㅲ?-> [???異붽?/?쒓굅](#???異붽??쒓굅-envenc-?섎굹-湲곗?)
 
 ---
 
-## 개발 흐름
+## 媛쒕컻 ?먮쫫
 
-### 기존처럼 평문 `.env`로 실행
+### 湲곗〈泥섎읆 ?됰Ц `.env`濡??ㅽ뻾
 
-- 로컬 `.env`를 사용해 개발
-- 필요할 때만 `.env.enc` 갱신 후 커밋
+- 濡쒖뺄 `.env`瑜??ъ슜??媛쒕컻
+- ?꾩슂???뚮쭔 `.env.enc` 媛깆떊 ??而ㅻ컠
 
 
 
-## 언제 어떤 명령을 치나
+## ?몄젣 ?대뼡 紐낅졊??移섎굹
 
-### `.env` 값을 수정했을 때 (매번)
+### `.env` 媛믪쓣 ?섏젙?덉쓣 ??(留ㅻ쾲)
 
-아래 명령으로 `.env.enc`를 갱신:
+?꾨옒 紐낅졊?쇰줈 `.env.enc`瑜?媛깆떊:
 
 ```bash
 sops encrypt --input-type dotenv --output-type dotenv --output .env.enc .env
 ```
 
-그리고 `.env.enc`만 커밋.
+洹몃━怨?`.env.enc`留?而ㅻ컠.
 
-### C. 다른 팀원이 올린 `.env.enc`를 받았을 때
+### C. ?ㅻⅨ ??먯씠 ?щ┛ `.env.enc`瑜?諛쏆븯????
 
-필요하면 확인:
+?꾩슂?섎㈃ ?뺤씤:
 
 ```bash
 sops decrypt --filename-override .env .env.enc
 ```
 
-참고:
+李멸퀬:
 
-- 평소에는 꼭 복호화 명령을 매번 칠 필요는 없고, .env값 수정 이후 commit시에만 수행
+- ?됱냼?먮뒗 瑗?蹂듯샇??紐낅졊??留ㅻ쾲 移??꾩슂???녾퀬, .env媛??섏젙 ?댄썑 commit?쒖뿉留??섑뻾
 
 ---
 
-## 팀원 추가/제거
+## ???異붽?/?쒓굅
 
-### 팀원 추가
+### ???異붽?
 
-1. 신규 팀원 공개키를 `.sops.yaml`에 추가
-2. recipient 갱신
+1. ?좉퇋 ???怨듦컻?ㅻ? `env_encrypt/.sops.yaml`??異붽?
+2. recipient 媛깆떊
 
 ```bash
 sops updatekeys .env.enc
 ```
 
-### 팀원 제거
+### ????쒓굅
 
-1. 제거 대상 공개키를 `.sops.yaml`에서 삭제
-2. 데이터 키 재생성(필수)
+1. ?쒓굅 ???怨듦컻?ㅻ? `env_encrypt/.sops.yaml`?먯꽌 ??젣
+2. ?곗씠?????ъ깮???꾩닔)
 
 ```bash
 sops rotate -i .env.enc
 ```
 
 ---
-## hook 관련 유의사항
+## hook 愿???좎쓽?ы빆
 
-- 로컬 Git 설정이라서 각 repo당 1회씩 필요합니다.
+- 濡쒖뺄 Git ?ㅼ젙?대씪??媛?repo??1?뚯뵫 ?꾩슂?⑸땲??
 
-- hook 설정 안 하면 사용에 문제는 없지만 평문 `.env` 실수 커밋 위험이 있습니다..
-
----
-
-## 커밋 규칙 (요약)
-
-- 커밋 가능: `.env.enc`
-- 커밋 금지: `.env`, `.env.*` 평문
+- hook ?ㅼ젙 ???섎㈃ ?ъ슜??臾몄젣???놁?留??됰Ц `.env` ?ㅼ닔 而ㅻ컠 ?꾪뿕???덉뒿?덈떎..
 
 ---
 
-## 참고 문서
+## 而ㅻ컠 洹쒖튃 (?붿빟)
 
-- 상세 운영 문서: [docs/secret-management.md](./docs/secret-management.md)
-- 상급자 보고 문서: [docs/secret-management-report.md](./docs/secret-management-report.md)
+- 而ㅻ컠 媛?? `.env.enc`
+- 而ㅻ컠 湲덉?: `.env`, `.env.*` ?됰Ц
+
+---
+
+## 李멸퀬 臾몄꽌
+
+- ?곸꽭 ?댁쁺 臾몄꽌: [docs/secret-management.md](./docs/secret-management.md)
+- ?곴툒??蹂닿퀬 臾몄꽌: [docs/secret-management-report.md](./docs/secret-management-report.md)
+
 

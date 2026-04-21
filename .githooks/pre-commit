@@ -11,7 +11,11 @@ auto_encrypt_if_enabled() {
   fi
   if [[ -f ".env" ]]; then
     if command -v sops >/dev/null 2>&1; then
-      sops encrypt --input-type dotenv --output-type dotenv .env > .env.enc
+      local sops_config="env_encrypt/.sops.yaml"
+      if [[ ! -f "${sops_config}" ]]; then
+        sops_config=".sops.yaml"
+      fi
+      sops --config "${sops_config}" encrypt --input-type dotenv --output-type dotenv .env > .env.enc
       git add .env.enc
       echo "[pre-commit] Auto-regenerated .env.enc from .env"
     else
@@ -67,4 +71,3 @@ main() {
 }
 
 main "$@"
-

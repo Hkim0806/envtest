@@ -1,4 +1,4 @@
 @echo off
-call "%~dp0scripts\env-crypto.bat" encrypt %*
+call "%~dp0env_encrypt\scripts\env-crypto.bat" encrypt %*
 exit /b %ERRORLEVEL%
 

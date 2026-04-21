@@ -1,4 +1,3 @@
 @echo off
-call "%~dp0scripts\env-crypto.bat" decrypt %*
+call "%~dp0env_encrypt\scripts\env-crypto.bat" decrypt %*
 exit /b %ERRORLEVEL%
-
