@@ -37,6 +37,18 @@ Windows:
 .\install\setup-secrets-windows.bat
 ```
 
+Windows (PowerShell/CMD/Git Bash 공통):
+
+```bash
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./install/setup-secrets-windows.ps1
+```
+
+Windows (Git Bash 전용):
+
+```bash
+./install/setup-secrets-windows.sh
+```
+
 macOS:
 
 ```bash
