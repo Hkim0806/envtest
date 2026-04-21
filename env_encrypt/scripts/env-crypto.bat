@@ -17,6 +17,7 @@ set "SHELL_KIND=cmd_or_powershell"
 if defined MSYSTEM set "SHELL_KIND=git-bash"
 set "SOPS_CONFIG_FILE=%WORK_DIR%\env_encrypt\.sops.yaml"
 if not exist "%SOPS_CONFIG_FILE%" set "SOPS_CONFIG_FILE=%WORK_DIR%\.sops.yaml"
+set "SOPS_CMD="
 
 set "SOPS_AGE_KEY_FILE=%USERPROFILE%\.config\sops\age\keys.txt"
 if not exist "%SOPS_AGE_KEY_FILE%" (
@@ -31,14 +32,25 @@ if not exist "%SOPS_AGE_KEY_FILE%" (
   exit /b 1
 )
 where sops >nul 2>nul
-if errorlevel 1 (
-  echo [ERROR] sops command not found in PATH.
+if not errorlevel 1 set "SOPS_CMD=sops"
+if not defined SOPS_CMD if exist "%USERPROFILE%\bin\sops.exe" set "SOPS_CMD=%USERPROFILE%\bin\sops.exe"
+if not defined SOPS_CMD if exist "%HOME%\bin\sops.exe" set "SOPS_CMD=%HOME%\bin\sops.exe"
+if not defined SOPS_CMD if exist "%WORK_DIR%\env_encrypt\bin\sops.exe" set "SOPS_CMD=%WORK_DIR%\env_encrypt\bin\sops.exe"
+if not defined SOPS_CMD (
+  echo [ERROR] sops command not found.
+  echo         Checked:
+  echo         - PATH ^(sops^)
+  echo         - %USERPROFILE%\bin\sops.exe
+  echo         - %HOME%\bin\sops.exe
+  echo         - %WORK_DIR%\env_encrypt\bin\sops.exe
+  echo Run env_encrypt\install\setup-secrets-windows.bat, then open a new terminal.
   exit /b 1
 )
 echo [INFO] Shell: %SHELL_KIND%
 echo [INFO] Key  : %SOPS_AGE_KEY_FILE%
 echo [INFO] Work : %WORK_DIR%
 echo [INFO] SOPS config: %SOPS_CONFIG_FILE%
+echo [INFO] SOPS cmd: %SOPS_CMD%
 exit /b 0
 
 :encrypt
@@ -53,7 +65,7 @@ if not exist "%PLAIN_FILE%" (
   exit /b 1
 )
 echo Encrypting "%PLAIN_FILE%" to "%ENC_FILE%"...
-sops --config "%SOPS_CONFIG_FILE%" --filename-override .env encrypt --input-type dotenv --output-type dotenv --output "%ENC_FILE%" "%PLAIN_FILE%"
+"%SOPS_CMD%" --config "%SOPS_CONFIG_FILE%" --filename-override .env encrypt --input-type dotenv --output-type dotenv --output "%ENC_FILE%" "%PLAIN_FILE%"
 if errorlevel 1 exit /b 1
 echo [OK] Encrypted: %ENC_FILE%
 exit /b 0
@@ -70,7 +82,7 @@ if not exist "%ENC_FILE%" (
   exit /b 1
 )
 echo Decrypting "%ENC_FILE%" to "%OUT_FILE%"...
-sops decrypt --filename-override .env "%ENC_FILE%" > "%OUT_FILE%"
+"%SOPS_CMD%" decrypt --filename-override .env "%ENC_FILE%" > "%OUT_FILE%"
 if errorlevel 1 exit /b 1
 echo [OK] Decrypted: %OUT_FILE%
 exit /b 0
