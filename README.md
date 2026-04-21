@@ -24,8 +24,8 @@
 ### 1) 리포 클론
 
 ```bash
-git clone https://github.com/Hkim0806/envtest.git
-cd envtest
+git clone https://github.com/Hkim0806/Templete-Repository.git
+cd Templete-Repository
 ```
 
 ### 2) 설치 + 초기설정 자동 실행 (OS별 1개만 실행)
