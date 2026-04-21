@@ -31,19 +31,14 @@ cd envtest
 
 ### 2) 설치 + 초기설정 자동 실행 (OS별 하나만)
 
-Windows:
+Windows (PowerShell,CMD):
 
 ```bat
 .\install\setup-secrets-windows.bat
 ```
 
-Windows (PowerShell/CMD/Git Bash 공통):
 
-```bash
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./install/setup-secrets-windows.ps1
-```
-
-Windows (Git Bash 전용):
+Windows (Git Bash):
 
 ```bash
 ./install/setup-secrets-windows.sh
@@ -90,7 +85,7 @@ git config core.hooksPath .githooks
 
 git hook 전역 설정
 ```
-git config --grobal core.hooksPath .githooks
+git config --global core.hooksPath .githooks
 ```
 이 설정은 전역 설정이기에 organization이 아닌 다른 repo의 env 커밋이 막힐 수 있음.
 
@@ -108,45 +103,16 @@ git config --grobal core.hooksPath .githooks
 
 ## 개발 흐름
 
-### 옵션 A) 기존처럼 평문 `.env`로 실행
+### 기존처럼 평문 `.env`로 실행
 
 - 로컬 `.env`를 사용해 개발
 - 필요할 때만 `.env.enc` 갱신 후 커밋
 
-### 옵션 B) 실행 시 자동 주입 방식
 
-```bash
-./scripts/run-with-env.sh npm run dev
-```
-
-또는 IDE를 env 주입 상태로 실행:
-
-```bash
-./scripts/open-ide.sh code
-```
-
-`open-ide.sh`가 하는 일:
-
-- `.env.enc`를 실행 시점에 복호화
-- 환경변수를 IDE 프로세스에 주입
-- IDE는 해당 환경으로 프로젝트를 엽니다
-
-즉 “IDE 명령 실행”은 IDE를 켜는 방식 중 하나이며, 주입형 실행입니다.
-
----
 
 ## 언제 어떤 명령을 치나
 
-### A. 처음 env를 만들 때 (1회)
-
-1. 로컬 `.env` 작성
-2. 암호화 파일 생성
-
-```bash
-sops encrypt --input-type dotenv --output-type dotenv --output .env.enc .env
-```
-
-### B. `.env` 값을 수정했을 때 (매번)
+### `.env` 값을 수정했을 때 (매번)
 
 아래 명령으로 `.env.enc`를 갱신:
 
@@ -164,19 +130,13 @@ sops encrypt --input-type dotenv --output-type dotenv --output .env.enc .env
 sops decrypt --filename-override .env .env.enc
 ```
 
-주의:
+참고:
 
-- 평소에는 꼭 복호화 명령을 매번 칠 필요는 없습니다.
-- 로컬 `.env`로 개발한다면 변경 시점에 암호화만 해주면 됩니다.
+- 평소에는 꼭 복호화 명령을 매번 칠 필요는 없고, .env값 수정 이후 commit시에만 수행
 
 ---
 
-## 팀원 추가/제거 (`.env.enc` 하나 기준)
-
-문서에 3줄(`.env.enc`, `.env.dev.enc`, `.env.prod.enc`)이 있던 이유는
-멀티 환경 파일을 쓰는 팀도 지원하기 위해서였습니다.
-
-우리처럼 `.env.enc`만 쓰면 한 줄만 쓰면 됩니다.
+## 팀원 추가/제거
 
 ### 팀원 추가
 
@@ -201,7 +161,7 @@ sops rotate -i .env.enc
 
 - 로컬 Git 설정이라서 각 repo당 1회씩 필요합니다.
 
-- hook 설정 안 하면 사용에 문제는 없지만 평문 `.env` 실수 커밋 위험이 커집니다.
+- hook 설정 안 하면 사용에 문제는 없지만 평문 `.env` 실수 커밋 위험이 있습니다..
 
 ---
 
@@ -209,7 +169,6 @@ sops rotate -i .env.enc
 
 - 커밋 가능: `.env.enc`
 - 커밋 금지: `.env`, `.env.*` 평문
-- 권장: `.env.enc` 변경은 리뷰 후 머지
 
 ---
 

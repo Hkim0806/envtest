@@ -63,6 +63,7 @@ pick_default_ide() {
   return 1
 }
 
+
 run_ide_with_env() {
   local ide="$1"
   local env_file="$2"
@@ -78,7 +79,7 @@ run_ide_with_env() {
   case "${ide}" in
     code|cursor|windsurf|idea|pycharm|webstorm|phpstorm|goland|rider|studio|nvim|vim)
       echo "Launching '${ide}' with env from '${env_file}' at '${root}'..."
-      sops exec-env --filename-override .env "${env_file}" "${ide}" "${root}"
+      sops --input-type dotenv exec-env "${env_file}" "bash -lc '${ide} --new-window \"${root}\"'"
       ;;
     *)
       die "Unsupported IDE '${ide}'."
