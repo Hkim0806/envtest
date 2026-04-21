@@ -15,7 +15,7 @@ auto_encrypt_if_enabled() {
       if [[ ! -f "${sops_config}" ]]; then
         sops_config=".sops.yaml"
       fi
-      sops --config "${sops_config}" encrypt --input-type dotenv --output-type dotenv .env > .env.enc
+      sops --config "${sops_config}" --filename-override .env encrypt --input-type dotenv --output-type dotenv .env > .env.enc
       git add .env.enc
       echo "[pre-commit] Auto-regenerated .env.enc from .env"
     else

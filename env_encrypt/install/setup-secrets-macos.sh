@@ -56,7 +56,11 @@ set -euo pipefail
 export SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE:-$HOME/.config/sops/age/keys.txt}"
 PLAIN_FILE="${1:-.env}"
 ENC_FILE="${2:-.env.enc}"
-sops encrypt --input-type dotenv --output-type dotenv --output "${ENC_FILE}" "${PLAIN_FILE}"
+CONFIG_FILE="${PWD}/env_encrypt/.sops.yaml"
+if [[ ! -f "${CONFIG_FILE}" ]]; then
+  CONFIG_FILE="${PWD}/.sops.yaml"
+fi
+sops --config "${CONFIG_FILE}" --filename-override .env encrypt --input-type dotenv --output-type dotenv --output "${ENC_FILE}" "${PLAIN_FILE}"
 EOF
 
 cat > "${USER_BIN}/decrypt" <<'EOF'

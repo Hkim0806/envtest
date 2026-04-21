@@ -1,42 +1,40 @@
 ﻿# envtest Secret Management (SOPS + age)
 
-??臾몄꽌?????`.env`瑜??덉쟾?섍쾶 怨듭쑀/?댁쁺?섍린 ?꾪븳 ?ㅻТ 媛?대뱶?낅땲??
+이 문서는 `.env` 비밀 정보를 안전하게 공유/운영하기 위한 실무 가이드입니다.
 
-?듭떖 紐⑹쟻:
+핵심 목표:
 
-- Git?먮뒗 ?뷀샇???뚯씪留??щ┛??(`.env.enc`)
-- ??먯? ?덊룷留?諛쏆븘??`.env`瑜?蹂듯샇?뷀빐??諛붾줈 ?ъ슜?????덈떎
-- ?됰Ц `.env` ?ㅼ닔 而ㅻ컠? hook?쇰줈 李⑤떒?쒕떎
-
----
-
-## ? 湲곕낯 ?댁쁺 諛⑹떇
-
-
-1. 媛?媛쒕컻?먮뒗 蹂몄씤 PC?먯꽌 珥덇린?ㅼ젙 1???쒕떎
-2. ?됱냼 媛쒕컻? 濡쒖뺄 ?됰Ц `.env`濡?媛쒕컻?쒕떎
-3. `.env` 媛믪쓣 諛붽엥?쇰㈃ 而ㅻ컠 ?꾩뿉 `.env.enc`瑜??ㅼ떆 留뚮뱺??
-4. Git?먮뒗 `.env.enc`留?而ㅻ컠?쒕떎 (`.env`??湲덉?)
+- Git에는 암호화 파일만 커밋 (`.env.enc`)
+- 팀원은 리포만 받아도 `.env.enc`를 복호화해 사용 가능
+- 평문 `.env` 실수 커밋은 hook으로 차단
 
 ---
 
-## 鍮좊Ⅸ ?쒖옉 (泥섏쓬 1??
+## 기본 운영 방식
 
-### 1) ?덊룷 ?대줎
+1. 각 개발자는 본인 PC에서 초기 설정을 1회 수행
+2. 로컬에서는 평문 `.env`로 개발
+3. `.env`를 수정하면 커밋 전에 `.env.enc`를 다시 생성
+4. Git에는 `.env.enc`만 커밋 (`.env` 커밋 금지)
+
+---
+
+## 빠른 시작 (처음 1회)
+
+### 1) 리포 클론
 
 ```bash
 git clone https://github.com/Hkim0806/envtest.git
 cd envtest
 ```
 
-### 2) ?ㅼ튂 + 珥덇린?ㅼ젙 ?먮룞 ?ㅽ뻾 (OS蹂??섎굹留?
+### 2) 설치 + 초기설정 자동 실행 (OS별 1개만 실행)
 
-Windows (PowerShell,CMD):
+Windows (PowerShell/CMD):
 
 ```bat
 .\env_encrypt\install\setup-secrets-windows.bat
 ```
-
 
 Windows (Git Bash):
 
@@ -58,123 +56,104 @@ chmod +x ./env_encrypt/install/setup-secrets-linux.sh
 ./env_encrypt/install/setup-secrets-linux.sh
 ```
 
-???④퀎?먯꽌 ?먮룞?쇰줈 泥섎━??
+자동 처리 항목:
 
-- sops/age ?ㅼ튂
-- PATH ?ㅼ젙
-- age ???앹꽦
-- `SOPS_AGE_KEY_FILE` ?ㅼ젙
-- 怨듦컻??異쒕젰
+- sops/age 설치
+- PATH 설정
+- age 키 생성
+- `SOPS_AGE_KEY_FILE` 설정
+- 공개키 출력
 
-### 3) ???곕????닿린
+### 3) 터미널 재시작
 
-PATH/?섍꼍蹂??諛섏쁺???꾪빐 ?꾩슂?⑸땲??
+PATH/환경변수 반영을 위해 필요합니다.
 
-### 4) hook ?쒖꽦??(媛?repo留덈떎 1??
+### 4) hook 활성화 (각 repo마다 1회)
 
 ```bash
 git config core.hooksPath .githooks
 ```
 
-以묒슂:
+권고 사항 (전역 설정):
 
-- hook? ?쒗븳 紐낅쭔???ㅼ젙?섎뒗 寃??꾨떃?덈떎.
-- **媛곸옄 濡쒖뺄 repo留덈떎 吏곸젒 1??* ?ㅼ젙?댁빞 ?⑸땲??
-
-(?좏깮?ы빆)
-
-git hook ?꾩뿭 ?ㅼ젙
-```
+```bash
 git config --global core.hooksPath .githooks
 ```
-???ㅼ젙? ?꾩뿭 ?ㅼ젙?닿린??organization???꾨땶 ?ㅻⅨ repo??env 而ㅻ컠??留됲옄 ???덉쓬.
+
+주의:
+
+- 전역 hook은 다른 조직/다른 프로젝트에도 영향을 줄 수 있습니다.
+- 가장 안전한 방법은 **프로젝트별(local) hook 설정**입니다.
 
 ---
 
-## 鍮좊Ⅸ ?쒖옉 ?ㅼ쓬?먮뒗 ?대뵒濡?
+## 개발 흐름
 
-?곹솴蹂꾨줈 諛붾줈 ???뱀뀡?쇰줈 媛硫??⑸땲??
-
-- ?쒕컮濡?媛쒕컻 ?쒖옉??-> [媛쒕컻 ?먮쫫](#媛쒕컻-?먮쫫)
-- ?쐃nv 媛믪쓣 諛붽엥?ㅲ?-> [?몄젣 ?대뼡 紐낅졊??移섎굹](#?몄젣-?대뼡-紐낅졊??移섎굹)
-- ?쒖깉 ????ㅼ뼱?붾떎/?섍컮?ㅲ?-> [???異붽?/?쒓굅](#???異붽??쒓굅-envenc-?섎굹-湲곗?)
-
----
-
-## 媛쒕컻 ?먮쫫
-
-### 湲곗〈泥섎읆 ?됰Ц `.env`濡??ㅽ뻾
-
-- 濡쒖뺄 `.env`瑜??ъ슜??媛쒕컻
-- ?꾩슂???뚮쭔 `.env.enc` 媛깆떊 ??而ㅻ컠
-
-
-
-## ?몄젣 ?대뼡 紐낅졊??移섎굹
-
-### `.env` 媛믪쓣 ?섏젙?덉쓣 ??(留ㅻ쾲)
-
-?꾨옒 紐낅졊?쇰줈 `.env.enc`瑜?媛깆떊:
+### `.env` 수정 후 (매번)
 
 ```bash
-sops encrypt --input-type dotenv --output-type dotenv --output .env.enc .env
+./encrypt.bat
 ```
 
-洹몃━怨?`.env.enc`留?而ㅻ컠.
-
-### C. ?ㅻⅨ ??먯씠 ?щ┛ `.env.enc`瑜?諛쏆븯????
-
-?꾩슂?섎㈃ ?뺤씤:
+또는:
 
 ```bash
-sops decrypt --filename-override .env .env.enc
+sops --config ./env_encrypt/.sops.yaml --filename-override .env encrypt --input-type dotenv --output-type dotenv --output .env.enc .env
 ```
 
-李멸퀬:
+그 다음 `.env.enc`만 커밋합니다.
 
-- ?됱냼?먮뒗 瑗?蹂듯샇??紐낅졊??留ㅻ쾲 移??꾩슂???녾퀬, .env媛??섏젙 ?댄썑 commit?쒖뿉留??섑뻾
+### 팀원이 최신 `.env.enc`를 받았을 때
+
+```bash
+./decrypt.bat
+```
+
+또는:
+
+```bash
+sops decrypt --filename-override .env .env.enc > .env
+```
 
 ---
 
-## ???異붽?/?쒓굅
+## 팀원 추가/제거
 
-### ???異붽?
+### 팀원 추가
 
-1. ?좉퇋 ???怨듦컻?ㅻ? `env_encrypt/.sops.yaml`??異붽?
-2. recipient 媛깆떊
+1. 새 팀원 공개키를 `env_encrypt/.sops.yaml`에 추가
+2. recipient 갱신
 
 ```bash
 sops updatekeys .env.enc
 ```
 
-### ????쒓굅
+### 팀원 제거
 
-1. ?쒓굅 ???怨듦컻?ㅻ? `env_encrypt/.sops.yaml`?먯꽌 ??젣
-2. ?곗씠?????ъ깮???꾩닔)
+1. 제거 대상 공개키를 `env_encrypt/.sops.yaml`에서 삭제
+2. 데이터 키 재생성(필수)
 
 ```bash
 sops rotate -i .env.enc
 ```
 
 ---
-## hook 愿???좎쓽?ы빆
 
-- 濡쒖뺄 Git ?ㅼ젙?대씪??媛?repo??1?뚯뵫 ?꾩슂?⑸땲??
+## Hook 관련 주의사항
 
-- hook ?ㅼ젙 ???섎㈃ ?ъ슜??臾몄젣???놁?留??됰Ц `.env` ?ㅼ닔 而ㅻ컠 ?꾪뿕???덉뒿?덈떎..
-
----
-
-## 而ㅻ컠 洹쒖튃 (?붿빟)
-
-- 而ㅻ컠 媛?? `.env.enc`
-- 而ㅻ컠 湲덉?: `.env`, `.env.*` ?됰Ц
+- Hook은 로컬 Git 설정이므로 개발자마다 1회 설정 필요
+- Hook을 설정하지 않아도 사용은 가능하지만, 평문 `.env` 실수 커밋 위험이 커집니다
 
 ---
 
-## 李멸퀬 臾몄꽌
+## 커밋 규칙 요약
 
-- ?곸꽭 ?댁쁺 臾몄꽌: [docs/secret-management.md](./docs/secret-management.md)
-- ?곴툒??蹂닿퀬 臾몄꽌: [docs/secret-management-report.md](./docs/secret-management-report.md)
+- 커밋 대상: `.env.enc`
+- 커밋 금지: `.env`, `.env.*` 평문
 
+---
 
+## 참고
+
+- 상세 운영 문서: `env_encrypt/docs/secret-management.md` (존재 시)
+- 보고 문서: `env_encrypt/docs/secret-management-report.md` (존재 시)

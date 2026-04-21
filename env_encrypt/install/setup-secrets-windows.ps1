@@ -56,11 +56,13 @@ $encryptCmd = @'
 setlocal
 set "SOPS_AGE_KEY_FILE=%USERPROFILE%\.config\sops\age\keys.txt"
 if not exist "%SOPS_AGE_KEY_FILE%" set "SOPS_AGE_KEY_FILE=%APPDATA%\sops\age\keys.txt"
+set "CONFIG_FILE=%CD%\env_encrypt\.sops.yaml"
+if not exist "%CONFIG_FILE%" set "CONFIG_FILE=%CD%\.sops.yaml"
 set "PLAIN_FILE=%~1"
 set "ENC_FILE=%~2"
 if "%PLAIN_FILE%"=="" set "PLAIN_FILE=.env"
 if "%ENC_FILE%"=="" set "ENC_FILE=.env.enc"
-sops encrypt --input-type dotenv --output-type dotenv --output "%ENC_FILE%" "%PLAIN_FILE%"
+sops --config "%CONFIG_FILE%" --filename-override .env encrypt --input-type dotenv --output-type dotenv --output "%ENC_FILE%" "%PLAIN_FILE%"
 exit /b %ERRORLEVEL%
 '@
 

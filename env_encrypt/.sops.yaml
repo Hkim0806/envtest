@@ -3,7 +3,7 @@ creation_rules:
   # Matches:
   #   .env
   #   .env.enc
-  - path_regex: (^|/)\.env(\.(dev|prod))?(\.enc)?$
+  - path_regex: '(^|[\\/])\.env(\.(dev|prod))?(\.enc)?$'
     age:
       # Add one or more real age public keys (age1...).
       - age1ne73y5hy979ywe729k07lyqst7atxrupr9lmecnpens747sjcfaq8jal9x  #김한별
