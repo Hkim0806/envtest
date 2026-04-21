@@ -85,7 +85,33 @@ else
   echo "Existing key found: ${AGE_KEY_FILE}"
 fi
 
-echo "[6/6] Verifying install..."
+echo "[6/7] Installing global helper commands (encrypt/decrypt)..."
+cat > "${USER_BIN}/encrypt" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+export SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE:-$HOME/.config/sops/age/keys.txt}"
+PLAIN_FILE="${1:-.env}"
+ENC_FILE="${2:-.env.enc}"
+sops encrypt --input-type dotenv --output-type dotenv --output "${ENC_FILE}" "${PLAIN_FILE}"
+EOF
+
+cat > "${USER_BIN}/decrypt" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+export SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE:-$HOME/.config/sops/age/keys.txt}"
+ENC_FILE="${1:-.env.enc}"
+OUT_FILE="${2:-.env}"
+sops decrypt --filename-override .env "${ENC_FILE}" > "${OUT_FILE}"
+EOF
+
+cat > "${USER_BIN}/encrpt" <<'EOF'
+#!/usr/bin/env bash
+exec encrypt "$@"
+EOF
+
+chmod +x "${USER_BIN}/encrypt" "${USER_BIN}/decrypt" "${USER_BIN}/encrpt"
+
+echo "[7/7] Verifying install..."
 "${USER_BIN}/sops" --version | head -n 1
 "${USER_BIN}/age" --version
 "${USER_BIN}/age-keygen" --version
@@ -96,10 +122,10 @@ echo "Setup completed."
 echo "- sops: ${USER_BIN}/sops"
 echo "- age : ${USER_BIN}/age"
 echo "- key : ${AGE_KEY_FILE}"
+echo "- helper: ${USER_BIN}/encrypt, ${USER_BIN}/decrypt, ${USER_BIN}/encrpt"
 echo "- public key: ${PUBLIC_KEY}"
 echo
 echo "IMPORTANT:"
 echo "1) Open a new terminal or run: source ~/.bashrc"
 echo "2) Share only the public key above."
 echo "3) Never share AGE-SECRET-KEY."
-

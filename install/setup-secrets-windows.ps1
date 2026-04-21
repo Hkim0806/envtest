@@ -47,8 +47,40 @@ if (-not (Test-Path $ageKeyFile)) {
   Write-Host "Existing key found: $ageKeyFile"
 }
 
-Write-Host "[5/5] Setting SOPS_AGE_KEY_FILE and printing public key..."
+Write-Host "[5/6] Setting SOPS_AGE_KEY_FILE..."
 [Environment]::SetEnvironmentVariable("SOPS_AGE_KEY_FILE", $ageKeyFile, "User")
+
+Write-Host "[6/6] Installing global helper commands (encrypt/decrypt)..."
+$encryptCmd = @'
+@echo off
+setlocal
+set "SOPS_AGE_KEY_FILE=%USERPROFILE%\.config\sops\age\keys.txt"
+if not exist "%SOPS_AGE_KEY_FILE%" set "SOPS_AGE_KEY_FILE=%APPDATA%\sops\age\keys.txt"
+set "PLAIN_FILE=%~1"
+set "ENC_FILE=%~2"
+if "%PLAIN_FILE%"=="" set "PLAIN_FILE=.env"
+if "%ENC_FILE%"=="" set "ENC_FILE=.env.enc"
+sops encrypt --input-type dotenv --output-type dotenv --output "%ENC_FILE%" "%PLAIN_FILE%"
+exit /b %ERRORLEVEL%
+'@
+
+$decryptCmd = @'
+@echo off
+setlocal
+set "SOPS_AGE_KEY_FILE=%USERPROFILE%\.config\sops\age\keys.txt"
+if not exist "%SOPS_AGE_KEY_FILE%" set "SOPS_AGE_KEY_FILE=%APPDATA%\sops\age\keys.txt"
+set "ENC_FILE=%~1"
+set "OUT_FILE=%~2"
+if "%ENC_FILE%"=="" set "ENC_FILE=.env.enc"
+if "%OUT_FILE%"=="" set "OUT_FILE=.env"
+sops decrypt --filename-override .env "%ENC_FILE%" > "%OUT_FILE%"
+exit /b %ERRORLEVEL%
+'@
+
+Set-Content -Path (Join-Path $userBin "encrypt.cmd") -Value $encryptCmd -Encoding ascii
+Set-Content -Path (Join-Path $userBin "decrypt.cmd") -Value $decryptCmd -Encoding ascii
+Set-Content -Path (Join-Path $userBin "encrpt.cmd") -Value "@echo off`r`ncall encrypt %*`r`n" -Encoding ascii
+
 $publicKey = & (Join-Path $userBin "age-keygen.exe") -y $ageKeyFile
 
 Write-Host ""
@@ -56,10 +88,10 @@ Write-Host "Setup completed."
 Write-Host "- sops path: $(Join-Path $userBin 'sops.exe')"
 Write-Host "- age path : $(Join-Path $userBin 'age.exe')"
 Write-Host "- key file : $ageKeyFile"
+Write-Host "- helper   : encrypt / decrypt / encrpt"
 Write-Host "- public key: $publicKey"
 Write-Host ""
 Write-Host "IMPORTANT:"
 Write-Host "1. Open a NEW terminal to use updated PATH."
 Write-Host "2. Share only the public key above with your team."
 Write-Host "3. Never share AGE-SECRET-KEY."
-
