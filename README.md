@@ -24,7 +24,7 @@
 ### 1) 리포 클론
 
 ```bash
-git clone https://github.com/Hkim0806/Templete-Repository.git
+git clone https://github.com/AXLRator/Templete-Repository.git
 cd Templete-Repository
 ```
 
@@ -42,6 +42,8 @@ Windows (Git Bash):
 ```bash
 # 권장: Windows 설치 스크립트(PowerShell) 호출
 ./env_encrypt/install/setup-secrets-windows.sh
+```
+```
 # 원래 방식(수동)
 # sops/age 직접 설치 + ~/.config/sops/age/keys.txt 생성 + SOPS_AGE_KEY_FILE export
 ```
@@ -52,6 +54,8 @@ macOS:
 # 권장: 자동 설치 스크립트
 chmod +x ./env_encrypt/install/setup-secrets-macos.sh
 ./env_encrypt/install/setup-secrets-macos.sh
+```
+```
 # 원래 방식(수동)
 # brew install sops age && age-keygen -o ~/.config/sops/age/keys.txt
 ```
@@ -62,6 +66,8 @@ Linux:
 # 권장: 자동 설치 스크립트
 chmod +x ./env_encrypt/install/setup-secrets-linux.sh
 ./env_encrypt/install/setup-secrets-linux.sh
+```
+```
 # 원래 방식(수동)
 # sops/age 바이너리 직접 설치 + age-keygen -o ~/.config/sops/age/keys.txt
 ```
