@@ -164,10 +164,3 @@ sops rotate -i .env.enc
 
 - 커밋 대상: `.env.enc`
 - 커밋 금지: `.env`, `.env.*` 평문
-
----
-
-## 참고
-
-- 상세 운영 문서: `env_encrypt/docs/secret-management.md` (존재 시)
-- 보고 문서: `env_encrypt/docs/secret-management-report.md` (존재 시)
