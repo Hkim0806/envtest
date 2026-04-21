@@ -33,27 +33,37 @@ cd envtest
 Windows (PowerShell/CMD):
 
 ```bat
+REM 권장: 설치/설정 자동화 스크립트
 .\env_encrypt\install\setup-secrets-windows.bat
 ```
 
 Windows (Git Bash):
 
 ```bash
+# 권장: Windows 설치 스크립트(PowerShell) 호출
 ./env_encrypt/install/setup-secrets-windows.sh
+# 원래 방식(수동)
+# sops/age 직접 설치 + ~/.config/sops/age/keys.txt 생성 + SOPS_AGE_KEY_FILE export
 ```
 
 macOS:
 
 ```bash
+# 권장: 자동 설치 스크립트
 chmod +x ./env_encrypt/install/setup-secrets-macos.sh
 ./env_encrypt/install/setup-secrets-macos.sh
+# 원래 방식(수동)
+# brew install sops age && age-keygen -o ~/.config/sops/age/keys.txt
 ```
 
 Linux:
 
 ```bash
+# 권장: 자동 설치 스크립트
 chmod +x ./env_encrypt/install/setup-secrets-linux.sh
 ./env_encrypt/install/setup-secrets-linux.sh
+# 원래 방식(수동)
+# sops/age 바이너리 직접 설치 + age-keygen -o ~/.config/sops/age/keys.txt
 ```
 
 자동 처리 항목:
@@ -74,7 +84,7 @@ PATH/환경변수 반영을 위해 필요합니다.
 git config core.hooksPath .githooks
 ```
 
-권고 사항 (전역 설정):
+선택 사항 (전역 설정):
 
 ```bash
 git config --global core.hooksPath .githooks
@@ -92,12 +102,9 @@ git config --global core.hooksPath .githooks
 ### `.env` 수정 후 (매번)
 
 ```bash
+# 권장: 래퍼 스크립트 사용
 ./encrypt.bat
-```
-
-또는:
-
-```bash
+# 원래 명령어: sops 직접 실행
 sops --config ./env_encrypt/.sops.yaml --filename-override .env encrypt --input-type dotenv --output-type dotenv --output .env.enc .env
 ```
 
@@ -106,12 +113,9 @@ sops --config ./env_encrypt/.sops.yaml --filename-override .env encrypt --input-
 ### 팀원이 최신 `.env.enc`를 받았을 때
 
 ```bash
+# 권장: 래퍼 스크립트 사용
 ./decrypt.bat
-```
-
-또는:
-
-```bash
+# 원래 명령어: sops 직접 실행
 sops decrypt --filename-override .env .env.enc > .env
 ```
 
