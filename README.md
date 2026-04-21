@@ -1,6 +1,6 @@
-﻿# envtest Secret Management (SOPS + age)
+﻿# Secret Management (SOPS + age)
 
-이 문서는 `.env` 비밀 정보를 안전하게 공유/운영하기 위한 실무 가이드입니다.
+이 문서는 `.env` 비밀 정보를 안전하게 공유/운영하기 위한 가이드입니다.
 
 핵심 목표:
 
@@ -102,8 +102,10 @@ git config --global core.hooksPath .githooks
 ### `.env` 수정 후 (매번)
 
 ```bash
-# 권장: 래퍼 스크립트 사용
+# 권장: 스크립트 사용
 ./encrypt.bat
+```
+```
 # 원래 명령어: sops 직접 실행
 sops --config ./env_encrypt/.sops.yaml --filename-override .env encrypt --input-type dotenv --output-type dotenv --output .env.enc .env
 ```
@@ -113,8 +115,10 @@ sops --config ./env_encrypt/.sops.yaml --filename-override .env encrypt --input-
 ### 팀원이 최신 `.env.enc`를 받았을 때
 
 ```bash
-# 권장: 래퍼 스크립트 사용
+# 권장: 스크립트 사용
 ./decrypt.bat
+```
+```
 # 원래 명령어: sops 직접 실행
 sops decrypt --filename-override .env .env.enc > .env
 ```
