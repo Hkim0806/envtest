@@ -133,25 +133,9 @@ sops decrypt --filename-override .env .env.enc > .env
 
 ## 팀원 추가/제거
 
-### 팀원 추가
+### 팀원 추가 및 제거
 
-1. 새 팀원 공개키를 `env_encrypt/.sops.yaml`에 추가
-2. recipient 갱신
-
-```bash
-sops updatekeys .env.enc
-```
-
-### 팀원 제거
-
-1. 제거 대상 공개키를 `env_encrypt/.sops.yaml`에서 삭제
-2. 데이터 키 재생성(필수)
-
-```bash
-sops rotate -i .env.enc
-```
-
----
+`env_encrypt/.sops.yaml`을 최신화 후 재 암호화 및 배포
 
 ## Hook 관련 주의사항
 
