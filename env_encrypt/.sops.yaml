@@ -6,6 +6,6 @@ creation_rules:
   - path_regex: '(^|[\\/])\.env(\.(dev|prod))?(\.enc)?$'
     age:
       # Add one or more real age public keys (age1...).
-      - age1ne73y5hy979ywe729k07lyqst7atxrupr9lmecnpens747sjcfaq8jal9x  #김한별
-      - age1kztkm046d2q53k6aml6sph4spgdaf90ety5f9l9hdl3m5rgv9e8qymn7nm  #김원형 노트북
+      - age1ne73y5hy979ywe729k07lyqst7atxrupr9lmecnpens747sjcfaq8jal9x  # user-1
+      - age1kztkm046d2q53k6aml6sph4spgdaf90ety5f9l9hdl3m5rgv9e8qymn7nm  # user-2
       # - age1yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy

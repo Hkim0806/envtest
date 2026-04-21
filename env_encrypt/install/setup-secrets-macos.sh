@@ -2,14 +2,14 @@
 
 set -euo pipefail
 
-echo "[1/5] Checking Homebrew..."
+echo "[1/6] Checking Homebrew..."
 if ! command -v brew >/dev/null 2>&1; then
   echo "[ERROR] Homebrew is not installed."
   echo "Install Homebrew first: https://brew.sh"
   exit 1
 fi
 
-echo "[2/5] Installing sops + age..."
+echo "[2/6] Installing sops + age..."
 if ! command -v sops >/dev/null 2>&1; then
   brew install sops
 fi
@@ -34,8 +34,10 @@ fi
 echo "[5/6] Exporting PATH and SOPS_AGE_KEY_FILE..."
 CURRENT_SHELL="$(basename "${SHELL:-zsh}")"
 PROFILE_FILE="${HOME}/.zshrc"
+ALT_PROFILE_FILE=""
 if [[ "${CURRENT_SHELL}" == "bash" ]]; then
-  PROFILE_FILE="${HOME}/.bashrc"
+  PROFILE_FILE="${HOME}/.bash_profile"
+  ALT_PROFILE_FILE="${HOME}/.bashrc"
 fi
 PATH_LINE='export PATH="$HOME/.local/bin:$PATH"'
 EXPORT_LINE="export SOPS_AGE_KEY_FILE=\"${AGE_KEY_FILE}\""
@@ -45,6 +47,15 @@ if ! grep -Fq "${PATH_LINE}" "${PROFILE_FILE}"; then
 fi
 if ! grep -Fq "${EXPORT_LINE}" "${PROFILE_FILE}"; then
   printf "\n%s\n" "${EXPORT_LINE}" >> "${PROFILE_FILE}"
+fi
+if [[ -n "${ALT_PROFILE_FILE}" ]]; then
+  touch "${ALT_PROFILE_FILE}"
+  if ! grep -Fq "${PATH_LINE}" "${ALT_PROFILE_FILE}"; then
+    printf "\n%s\n" "${PATH_LINE}" >> "${ALT_PROFILE_FILE}"
+  fi
+  if ! grep -Fq "${EXPORT_LINE}" "${ALT_PROFILE_FILE}"; then
+    printf "\n%s\n" "${EXPORT_LINE}" >> "${ALT_PROFILE_FILE}"
+  fi
 fi
 export PATH="${HOME}/.local/bin:${PATH}"
 export SOPS_AGE_KEY_FILE="${AGE_KEY_FILE}"

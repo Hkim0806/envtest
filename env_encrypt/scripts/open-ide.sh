@@ -77,9 +77,13 @@ run_ide_with_env() {
   fi
 
   case "${ide}" in
-    code|cursor|windsurf|idea|pycharm|webstorm|phpstorm|goland|rider|studio|nvim|vim)
+    code|cursor|windsurf|idea|pycharm|webstorm|phpstorm|goland|rider|studio)
       echo "Launching '${ide}' with env from '${env_file}' at '${root}'..."
-      sops --input-type dotenv exec-env "${env_file}" "bash -lc '${ide} --new-window \"${root}\"'"
+      sops exec-env --filename-override .env "${env_file}" bash -lc 'exec "$@"' bash "${ide}" --new-window "${root}"
+      ;;
+    nvim|vim)
+      echo "Launching '${ide}' with env from '${env_file}' at '${root}'..."
+      sops exec-env --filename-override .env "${env_file}" bash -lc 'exec "$@"' bash "${ide}" "${root}"
       ;;
     *)
       die "Unsupported IDE '${ide}'."

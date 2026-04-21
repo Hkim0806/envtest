@@ -40,7 +40,7 @@ append_if_missing() {
   fi
 }
 
-echo "[1/6] Preparing directories..."
+echo "[1/7] Preparing directories..."
 ARCH="$(detect_arch)"
 USER_BIN="${HOME}/.local/bin"
 AGE_DIR="${HOME}/.config/sops/age"
@@ -53,12 +53,12 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "[2/6] Installing sops..."
+echo "[2/7] Installing sops..."
 SOPS_URL="https://github.com/getsops/sops/releases/download/${SOPS_VERSION}/sops-${SOPS_VERSION}.linux.${ARCH}"
 download_file "${SOPS_URL}" "${USER_BIN}/sops"
 chmod +x "${USER_BIN}/sops"
 
-echo "[3/6] Installing age..."
+echo "[3/7] Installing age..."
 AGE_TAR="${TMP_DIR}/age.tar.gz"
 AGE_URL="https://dl.filippo.io/age/${AGE_VERSION}?for=linux/${ARCH}"
 download_file "${AGE_URL}" "${AGE_TAR}"
@@ -67,7 +67,7 @@ cp -f "${TMP_DIR}/age/age" "${USER_BIN}/age"
 cp -f "${TMP_DIR}/age/age-keygen" "${USER_BIN}/age-keygen"
 chmod +x "${USER_BIN}/age" "${USER_BIN}/age-keygen"
 
-echo "[4/6] Updating shell profile..."
+echo "[4/7] Updating shell profile..."
 PATH_LINE='export PATH="$HOME/.local/bin:$PATH"'
 SOPS_KEY_LINE='export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"'
 append_if_missing "${HOME}/.bashrc" "${PATH_LINE}"
@@ -77,7 +77,7 @@ append_if_missing "${HOME}/.zshrc" "${SOPS_KEY_LINE}"
 export PATH="${HOME}/.local/bin:${PATH}"
 export SOPS_AGE_KEY_FILE="${AGE_KEY_FILE}"
 
-echo "[5/6] Generating age key (if missing)..."
+echo "[5/7] Generating age key (if missing)..."
 if [[ ! -f "${AGE_KEY_FILE}" ]]; then
   "${USER_BIN}/age-keygen" -o "${AGE_KEY_FILE}"
   chmod 600 "${AGE_KEY_FILE}" || true

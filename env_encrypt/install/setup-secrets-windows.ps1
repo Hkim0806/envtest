@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-Write-Host "[1/5] Preparing directories..."
+Write-Host "[1/6] Preparing directories..."
 $userBin = Join-Path $HOME "bin"
 $ageDir = Join-Path $HOME ".config\sops\age"
 $ageKeyFile = Join-Path $ageDir "keys.txt"
@@ -8,7 +8,7 @@ $ageKeyFile = Join-Path $ageDir "keys.txt"
 New-Item -ItemType Directory -Force -Path $userBin | Out-Null
 New-Item -ItemType Directory -Force -Path $ageDir | Out-Null
 
-Write-Host "[2/5] Installing sops + age binaries..."
+Write-Host "[2/6] Installing sops + age binaries..."
 $sopsUrl = "https://github.com/getsops/sops/releases/download/v3.12.2/sops-v3.12.2.amd64.exe"
 $ageZipUrl = "https://dl.filippo.io/age/v1.3.1?for=windows/amd64"
 
@@ -25,7 +25,7 @@ Copy-Item -Force (Join-Path $extract "age\age-keygen.exe") (Join-Path $userBin "
 Remove-Item -Force $zip
 Remove-Item -Recurse -Force $extract
 
-Write-Host "[3/5] Updating USER PATH..."
+Write-Host "[3/6] Updating USER PATH..."
 $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
 if ([string]::IsNullOrWhiteSpace($userPath)) { $userPath = "" }
 
@@ -40,7 +40,7 @@ foreach ($p in $parts) {
 if (-not $exists) { $parts += $userBin }
 [Environment]::SetEnvironmentVariable("Path", ($parts -join ";"), "User")
 
-Write-Host "[4/5] Creating age key (if missing)..."
+Write-Host "[4/6] Creating age key (if missing)..."
 if (-not (Test-Path $ageKeyFile)) {
   & (Join-Path $userBin "age-keygen.exe") -o $ageKeyFile | Out-Null
 } else {
