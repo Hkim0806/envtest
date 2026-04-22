@@ -1,5 +1,30 @@
 $ErrorActionPreference = "Stop"
 
+$SopsVersion = "v3.12.2"
+$AgeVersion = "v1.3.1"
+$SopsSha256 = "5e777b1854ab2a6271d8f66375970e1fe3eea838251c309de151d16a2bdf13a2"
+$AgeZipSha256 = "c56e8ce22f7e80cb85ad946cc82d198767b056366201d3e1a2b93d865be38154"
+
+function Assert-FileSha256 {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$Path,
+    [Parameter(Mandatory = $true)]
+    [string]$Expected
+  )
+
+  if (-not (Test-Path $Path)) {
+    throw "File not found for hash verification: $Path"
+  }
+
+  $actual = (Get-FileHash -Path $Path -Algorithm SHA256).Hash.ToLowerInvariant()
+  $expectedNormalized = $Expected.ToLowerInvariant()
+
+  if ($actual -ne $expectedNormalized) {
+    throw "SHA256 mismatch for $Path`nExpected: $expectedNormalized`nActual  : $actual"
+  }
+}
+
 Write-Host "[1/6] Preparing directories..."
 $userBin = Join-Path $HOME "bin"
 $ageDir = Join-Path $HOME ".config\sops\age"
@@ -9,15 +34,18 @@ New-Item -ItemType Directory -Force -Path $userBin | Out-Null
 New-Item -ItemType Directory -Force -Path $ageDir | Out-Null
 
 Write-Host "[2/6] Installing sops + age binaries..."
-$sopsUrl = "https://github.com/getsops/sops/releases/download/v3.12.2/sops-v3.12.2.amd64.exe"
-$ageZipUrl = "https://dl.filippo.io/age/v1.3.1?for=windows/amd64"
+$sopsUrl = "https://github.com/getsops/sops/releases/download/$SopsVersion/sops-$SopsVersion.amd64.exe"
+$ageZipUrl = "https://github.com/FiloSottile/age/releases/download/$AgeVersion/age-$AgeVersion-windows-amd64.zip"
+$sopsOut = Join-Path $userBin "sops.exe"
 
-Invoke-WebRequest -Uri $sopsUrl -OutFile (Join-Path $userBin "sops.exe")
+Invoke-WebRequest -Uri $sopsUrl -OutFile $sopsOut
+Assert-FileSha256 -Path $sopsOut -Expected $SopsSha256
 
-$zip = Join-Path $userBin "age-v1.3.1-windows-amd64.zip"
+$zip = Join-Path $userBin "age-$AgeVersion-windows-amd64.zip"
 $extract = Join-Path $userBin "age-extract"
 
 Invoke-WebRequest -Uri $ageZipUrl -OutFile $zip
+Assert-FileSha256 -Path $zip -Expected $AgeZipSha256
 if (Test-Path $extract) { Remove-Item -Recurse -Force $extract }
 Expand-Archive -Force -Path $zip -DestinationPath $extract
 Copy-Item -Force (Join-Path $extract "age\age.exe") (Join-Path $userBin "age.exe")
@@ -54,14 +82,15 @@ Write-Host "[6/6] Installing global helper commands (encrypt/decrypt)..."
 $encryptCmd = @'
 @echo off
 setlocal
+for %%I in ("%CD%") do set "WORK_DIR=%%~fI"
 set "SOPS_AGE_KEY_FILE=%USERPROFILE%\.config\sops\age\keys.txt"
 if not exist "%SOPS_AGE_KEY_FILE%" set "SOPS_AGE_KEY_FILE=%APPDATA%\sops\age\keys.txt"
-set "CONFIG_FILE=%CD%\env_encrypt\.sops.yaml"
-if not exist "%CONFIG_FILE%" set "CONFIG_FILE=%CD%\.sops.yaml"
+set "CONFIG_FILE=%WORK_DIR%\env_encrypt\.sops.yaml"
+if not exist "%CONFIG_FILE%" set "CONFIG_FILE=%WORK_DIR%\.sops.yaml"
 set "PLAIN_FILE=%~1"
 set "ENC_FILE=%~2"
-if "%PLAIN_FILE%"=="" set "PLAIN_FILE=.env"
-if "%ENC_FILE%"=="" set "ENC_FILE=.env.enc"
+if "%PLAIN_FILE%"=="" set "PLAIN_FILE=%WORK_DIR%\.env"
+if "%ENC_FILE%"=="" set "ENC_FILE=%WORK_DIR%\.env.enc"
 sops --config "%CONFIG_FILE%" --filename-override .env encrypt --input-type dotenv --output-type dotenv --output "%ENC_FILE%" "%PLAIN_FILE%"
 exit /b %ERRORLEVEL%
 '@
@@ -69,12 +98,13 @@ exit /b %ERRORLEVEL%
 $decryptCmd = @'
 @echo off
 setlocal
+for %%I in ("%CD%") do set "WORK_DIR=%%~fI"
 set "SOPS_AGE_KEY_FILE=%USERPROFILE%\.config\sops\age\keys.txt"
 if not exist "%SOPS_AGE_KEY_FILE%" set "SOPS_AGE_KEY_FILE=%APPDATA%\sops\age\keys.txt"
 set "ENC_FILE=%~1"
 set "OUT_FILE=%~2"
-if "%ENC_FILE%"=="" set "ENC_FILE=.env.enc"
-if "%OUT_FILE%"=="" set "OUT_FILE=.env"
+if "%ENC_FILE%"=="" set "ENC_FILE=%WORK_DIR%\.env.enc"
+if "%OUT_FILE%"=="" set "OUT_FILE=%WORK_DIR%\.env"
 sops decrypt --filename-override .env "%ENC_FILE%" > "%OUT_FILE%"
 exit /b %ERRORLEVEL%
 '@

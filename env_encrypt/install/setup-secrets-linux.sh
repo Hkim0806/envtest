@@ -4,6 +4,9 @@ set -euo pipefail
 
 SOPS_VERSION="v3.12.2"
 AGE_VERSION="v1.3.1"
+SOPS_CHECKSUMS_SHA256="1c1ec25c8320666319abbe531dc2309b0575110acb74dea3a5f2a2f431eb2a42"
+AGE_SHA256_LINUX_AMD64="bdc69c09cbdd6cf8b1f333d372a1f58247b3a33146406333e30c0f26e8f51377"
+AGE_SHA256_LINUX_ARM64="c6878a324421b69e3e20b00ba17c04bc5c6dab0030cfe55bf8f68fa8d9e9093a"
 
 detect_arch() {
   local arch
@@ -31,6 +34,43 @@ download_file() {
   fi
 }
 
+sha256_file() {
+  local file="$1"
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "${file}" | awk '{print $1}'
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "${file}" | awk '{print $1}'
+  else
+    echo "[ERROR] sha256sum or shasum is required." >&2
+    exit 1
+  fi
+}
+
+verify_sha256() {
+  local file="$1"
+  local expected="$2"
+  local actual
+  actual="$(sha256_file "${file}")"
+  if [[ "${actual}" != "${expected}" ]]; then
+    echo "[ERROR] SHA256 mismatch for ${file}" >&2
+    echo "        expected: ${expected}" >&2
+    echo "        actual  : ${actual}" >&2
+    exit 1
+  fi
+}
+
+expected_hash_from_checksums() {
+  local checksums_file="$1"
+  local artifact_name="$2"
+  local value
+  value="$(awk -v target="${artifact_name}" '$2==target {print $1; exit}' "${checksums_file}")"
+  if [[ -z "${value}" ]]; then
+    echo "[ERROR] Could not find '${artifact_name}' in ${checksums_file}" >&2
+    exit 1
+  fi
+  echo "${value}"
+}
+
 append_if_missing() {
   local file="$1"
   local line="$2"
@@ -55,13 +95,27 @@ trap cleanup EXIT
 
 echo "[2/7] Installing sops..."
 SOPS_URL="https://github.com/getsops/sops/releases/download/${SOPS_VERSION}/sops-${SOPS_VERSION}.linux.${ARCH}"
+SOPS_CHECKSUMS_URL="https://github.com/getsops/sops/releases/download/${SOPS_VERSION}/sops-${SOPS_VERSION}.checksums.txt"
+SOPS_CHECKSUMS_FILE="${TMP_DIR}/sops-${SOPS_VERSION}.checksums.txt"
 download_file "${SOPS_URL}" "${USER_BIN}/sops"
+download_file "${SOPS_CHECKSUMS_URL}" "${SOPS_CHECKSUMS_FILE}"
+verify_sha256 "${SOPS_CHECKSUMS_FILE}" "${SOPS_CHECKSUMS_SHA256}"
+SOPS_EXPECTED_SHA256="$(expected_hash_from_checksums "${SOPS_CHECKSUMS_FILE}" "sops-${SOPS_VERSION}.linux.${ARCH}")"
+verify_sha256 "${USER_BIN}/sops" "${SOPS_EXPECTED_SHA256}"
 chmod +x "${USER_BIN}/sops"
 
 echo "[3/7] Installing age..."
 AGE_TAR="${TMP_DIR}/age.tar.gz"
-AGE_URL="https://dl.filippo.io/age/${AGE_VERSION}?for=linux/${ARCH}"
+AGE_URL="https://github.com/FiloSottile/age/releases/download/${AGE_VERSION}/age-${AGE_VERSION}-linux-${ARCH}.tar.gz"
 download_file "${AGE_URL}" "${AGE_TAR}"
+case "${ARCH}" in
+  amd64) verify_sha256 "${AGE_TAR}" "${AGE_SHA256_LINUX_AMD64}" ;;
+  arm64) verify_sha256 "${AGE_TAR}" "${AGE_SHA256_LINUX_ARM64}" ;;
+  *)
+    echo "Unsupported architecture for age verification: ${ARCH}" >&2
+    exit 1
+    ;;
+esac
 tar -xzf "${AGE_TAR}" -C "${TMP_DIR}"
 cp -f "${TMP_DIR}/age/age" "${USER_BIN}/age"
 cp -f "${TMP_DIR}/age/age-keygen" "${USER_BIN}/age-keygen"
@@ -90,11 +144,12 @@ cat > "${USER_BIN}/encrypt" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 export SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE:-$HOME/.config/sops/age/keys.txt}"
-PLAIN_FILE="${1:-.env}"
-ENC_FILE="${2:-.env.enc}"
-CONFIG_FILE="${PWD}/env_encrypt/.sops.yaml"
+WORK_DIR="${PWD}"
+PLAIN_FILE="${1:-${WORK_DIR}/.env}"
+ENC_FILE="${2:-${WORK_DIR}/.env.enc}"
+CONFIG_FILE="${WORK_DIR}/env_encrypt/.sops.yaml"
 if [[ ! -f "${CONFIG_FILE}" ]]; then
-  CONFIG_FILE="${PWD}/.sops.yaml"
+  CONFIG_FILE="${WORK_DIR}/.sops.yaml"
 fi
 sops --config "${CONFIG_FILE}" --filename-override .env encrypt --input-type dotenv --output-type dotenv --output "${ENC_FILE}" "${PLAIN_FILE}"
 EOF
@@ -103,8 +158,9 @@ cat > "${USER_BIN}/decrypt" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 export SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE:-$HOME/.config/sops/age/keys.txt}"
-ENC_FILE="${1:-.env.enc}"
-OUT_FILE="${2:-.env}"
+WORK_DIR="${PWD}"
+ENC_FILE="${1:-${WORK_DIR}/.env.enc}"
+OUT_FILE="${2:-${WORK_DIR}/.env}"
 sops decrypt --filename-override .env "${ENC_FILE}" > "${OUT_FILE}"
 EOF
 

@@ -1,7 +1,7 @@
 @echo off
-setlocal
+setlocal EnableExtensions DisableDelayedExpansion
 set "SCRIPT_DIR=%~dp0"
-set "WORK_DIR=%CD%"
+for %%I in ("%CD%") do set "WORK_DIR=%%~fI"
 
 if "%~1"=="" goto :usage
 if /I "%~1"=="encrypt" goto :encrypt
@@ -17,6 +17,13 @@ set "SHELL_KIND=cmd_or_powershell"
 if defined MSYSTEM set "SHELL_KIND=git-bash"
 set "SOPS_CONFIG_FILE=%WORK_DIR%\env_encrypt\.sops.yaml"
 if not exist "%SOPS_CONFIG_FILE%" set "SOPS_CONFIG_FILE=%WORK_DIR%\.sops.yaml"
+if not exist "%SOPS_CONFIG_FILE%" (
+  echo [ERROR] SOPS config file not found.
+  echo         Checked:
+  echo         - %WORK_DIR%\env_encrypt\.sops.yaml
+  echo         - %WORK_DIR%\.sops.yaml
+  exit /b 1
+)
 set "SOPS_CMD="
 
 set "SOPS_AGE_KEY_FILE=%USERPROFILE%\.config\sops\age\keys.txt"
